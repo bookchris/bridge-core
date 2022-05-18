@@ -13,6 +13,8 @@ export class Card {
 
   get rankStr() {
     switch (this.rank) {
+      case 8:
+        return "T";
       case 9:
         return "J";
       case 10:
