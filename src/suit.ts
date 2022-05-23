@@ -18,6 +18,18 @@ export class Suit {
     }
     return suit;
   }
+
+  public static fromLin(lin: string): Suit {
+    const suit = {
+      S: Suit.Spade,
+      H: Suit.Heart,
+      D: Suit.Diamond,
+      C: Suit.Club,
+      NT: Suit.NoTrump,
+    }[lin];
+    if (!suit) throw new Error(`Invalid lin value for suit: ${lin}`);
+    return suit;
+  }
 }
 
 export const Suits = [
