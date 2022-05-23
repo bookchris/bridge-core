@@ -9,6 +9,10 @@ export const SuitBids = ["1", "2", "3", "4", "5", "6", "7"].reduce(
 );
 
 export class Bid {
+  static Pass = new Bid("Pass");
+  static Double = new Bid("X");
+  static Redouble = new Bid("XX");
+
   readonly bid: string;
   readonly suit?: Suit;
   readonly level?: number;
@@ -21,5 +25,13 @@ export class Bid {
       this.index = SuitBids.indexOf(bid);
       this.level = parseInt(bid[0]);
     }
+  }
+
+  toString() {
+    return this.bid;
+  }
+
+  toJson() {
+    return this.toString();
   }
 }

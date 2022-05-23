@@ -31,4 +31,12 @@ export class Card {
   toString() {
     return `${this.rankStr}${this.suit}`;
   }
+
+  toJson(): number {
+    return this.id;
+  }
+
+  static comparator(a: Card, b: Card): number {
+    return a.id - b.id;
+  }
 }
