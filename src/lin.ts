@@ -1,6 +1,7 @@
 import { Hand, HandJson } from "./hand";
 import { Seat } from "./seat";
 import { Suit, Suits } from "./suit";
+import { Vulnerability } from "./vulnerability";
 
 export const linToHand = (data: string): Hand => {
   let url: URL;
@@ -54,6 +55,9 @@ export const linToHand = (data: string): Hand => {
           hands[2],
           hands[3]
         );
+        break;
+      case "sv":
+        json.vulnerability = Vulnerability.fromLin(value).toJson();
         break;
       case "mb":
         const bid = linBidToBid(value);

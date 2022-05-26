@@ -4,11 +4,14 @@ import { Card } from "./card";
 import { linToHand } from "./lin";
 import { Player } from "./player";
 import { Seat } from "./seat";
+import { Suit } from "./suit";
 import { Trick } from "./trick";
+import { Vulnerability } from "./vulnerability";
 
 export type HandJson = {
   board?: number;
   dealer?: string;
+  vulnerability?: string;
   deal?: number[];
   bidding?: string[];
   play?: number[];
@@ -23,6 +26,7 @@ export class Hand {
     readonly id: string | undefined,
     readonly board: number,
     readonly dealer: Seat,
+    readonly vulnerability: Vulnerability,
     readonly deal: Card[],
     readonly bids: Bid[],
     readonly play: Card[],
@@ -46,6 +50,7 @@ export class Hand {
       id,
       data.board || -1,
       Seat.fromString(data.dealer || ""),
+      Vulnerability.fromString(data.vulnerability || ""),
       data.deal?.map((c) => new Card(c)) || [],
       data.bidding?.map((b) => new Bid(b)) || [],
       data.play?.map((c) => new Card(c)) || [],
@@ -62,6 +67,7 @@ export class Hand {
     return {
       board: this.board,
       dealer: this.dealer.toJson(),
+      vulnerability: this.vulnerability.toJson(),
       deal: this.deal.map((c) => c.toJson()),
       bidding: this.bids.map((b) => b.toJson()),
       play: this.play.map((c) => c.toJson()),
@@ -127,11 +133,7 @@ export class Hand {
   }
 
   get result() {
-    if (
-      this.bidding.passed ||
-      this.state !== HandState.Complete ||
-      !this.bidding.level
-    ) {
+    if (this.state !== HandState.Complete || !this.bidding.level) {
       return 0;
     }
     let tricks = 0;
@@ -155,10 +157,88 @@ export class Hand {
   }
 
   get score() {
-    if (this.bidding.passed || this.state !== HandState.Complete) {
+    if (this.state !== HandState.Complete || this.bidding.passed) {
       return 0;
     }
-    return "TODO";
+    const result = this.result;
+    const vulnerable = this.vulnerability.isVulnerable(this.bidding.declarer!);
+    if (result < 0) {
+      if (this.bidding.doubled || this.bidding.redoubled) {
+        let score: number;
+        if (vulnerable) {
+          score = [
+            0, -200, -500, -800, -1100, -1400, -1700, -2000, -2300, -2600,
+            -2900, -3200, -3500, -3800,
+          ][-result];
+        } else {
+          score = [
+            0, -100, -300, -500, -800, -1100, -1400, -1700, -2000, -2300, -2600,
+            -2900, -3200, -3500,
+          ][-result];
+        }
+        if (this.bidding.redoubled) {
+          score *= 2;
+        }
+        return score;
+      } else if (vulnerable) {
+        return result * 100;
+      } else {
+        return result * 10;
+      }
+    }
+    let score = 0;
+    switch (this.bidding.suit) {
+      case Suit.Spade:
+      case Suit.Heart:
+        score = this.bidding.level! * 30;
+        break;
+      case Suit.Diamond:
+      case Suit.Club:
+        score = this.bidding.level! * 20;
+        break;
+      case Suit.NoTrump:
+        score = this.bidding.level! * 30 + 10;
+    }
+    if (this.bidding.doubled) {
+      score *= 2;
+    } else if (this.bidding.redoubled) {
+      score *= 4;
+    }
+    if (score < 100) {
+      score += 50;
+    } else {
+      score += vulnerable ? 500 : 300;
+      if (this.bidding.level === 7) {
+        score += vulnerable ? 1500 : 1000;
+      } else if (this.bidding.level === 6) {
+        score += vulnerable ? 750 : 500;
+      }
+    }
+    if (this.bidding.doubled) {
+      score += 50;
+    } else if (this.bidding.redoubled) {
+      score += 100;
+    }
+    if (result > 0) {
+      if (this.bidding.doubled) {
+        score += result * (vulnerable ? 200 : 100);
+      } else if (this.bidding.redoubled) {
+        score += result * (vulnerable ? 400 : 200);
+      } else {
+        switch (this.bidding.suit) {
+          case Suit.NoTrump:
+          case Suit.Spade:
+          case Suit.Heart:
+            score += result * 30;
+            break;
+          case Suit.Diamond:
+          case Suit.Club:
+            score += result + 20;
+            break;
+        }
+      }
+    }
+    return score;
   }
 
   get player() {
@@ -206,6 +286,7 @@ export class Hand {
       this.id,
       this.board,
       this.dealer,
+      this.vulnerability,
       this.deal,
       this.bids,
       this.play,
@@ -219,7 +300,6 @@ export class Hand {
   }
 
   atPosition(pos: number) {
-    console.log("position", pos);
     if (pos < 0) {
       return this;
     }
@@ -228,22 +308,13 @@ export class Hand {
     }
 
     const bids = this.bids.slice(0, pos);
-    const play =
-      bids.length <= pos ? [] : this.play.slice(0, pos - bids.length);
-    /*
-    const play = this.play.slice(0, Math.max(this.play.length - pos, 0));
-    pos -= this.play.length - play.length;
-
-    const bidding = this.bidding.bids.slice(
-      0,
-      Math.max(this.bidding.bids.length - pos, 0)
-    );
-    */
+    const play = bids.length < pos ? this.play.slice(0, pos - bids.length) : [];
 
     return new Hand(
       this.id,
       this.board,
       this.dealer,
+      this.vulnerability,
       this.deal,
       bids,
       play,
@@ -305,6 +376,7 @@ export class Hand {
       this.id,
       this.board,
       this.dealer,
+      this.vulnerability,
       this.deal,
       [...this.bids, bid],
       this.play,
