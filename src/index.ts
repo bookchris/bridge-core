@@ -7,3 +7,4 @@ export * from "./player";
 export * from "./seat";
 export * from "./suit";
 export * from "./trick";
+export * from "./vulnerability";
