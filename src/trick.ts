@@ -31,7 +31,7 @@ export class Trick {
       const ws = winner.suit;
       const cs = card.suit;
       if (ws == cs) {
-        if (winner < card) {
+        if (winner.id < card.id) {
           winner = card;
           seat = this.leader.next(i + 1);
         }

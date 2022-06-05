@@ -48,6 +48,10 @@ export class Seat {
   partner(): Seat {
     return this.next(2);
   }
+
+  isTeam(seat: Seat) {
+    return this === seat || this.partner() === seat;
+  }
 }
 
 export const Seats = [Seat.South, Seat.West, Seat.North, Seat.East];
