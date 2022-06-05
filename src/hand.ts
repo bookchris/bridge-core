@@ -132,6 +132,18 @@ export class Hand {
     return this.bidding.declarer ? this.bidding.declarer.next() : undefined;
   }
 
+  get northSouthTricks() {
+    return this.tricks.filter(
+      (t) => t.winningSeat === Seat.North || t.winningSeat === Seat.South
+    ).length;
+  }
+
+  get eastWestTricks() {
+    return this.tricks.filter(
+      (t) => t.winningSeat === Seat.East || t.winningSeat === Seat.West
+    ).length;
+  }
+
   get result() {
     if (this.state !== HandState.Complete || !this.bidding.level) {
       return 0;
@@ -140,18 +152,11 @@ export class Hand {
     if (this.claim !== -1) {
       tricks = this.claim;
     } else {
-      if (
+      tricks =
         this.bidding.declarer == Seat.North ||
         this.bidding.declarer == Seat.South
-      ) {
-        tricks = this.tricks.filter(
-          (t) => t.winningSeat === Seat.North || t.winningSeat === Seat.South
-        ).length;
-      } else {
-        tricks = this.tricks.filter(
-          (t) => t.winningSeat === Seat.East || t.winningSeat === Seat.West
-        ).length;
-      }
+          ? this.northSouthTricks
+          : this.eastWestTricks;
     }
     return tricks - (6 + this.bidding.level);
   }
@@ -233,12 +238,17 @@ export class Hand {
             break;
           case Suit.Diamond:
           case Suit.Club:
-            score += result + 20;
+            score += result * 20;
             break;
         }
       }
     }
     return score;
+  }
+
+  scoreAs(seat: Seat) {
+    if (!this.bidding.declarer) return 0;
+    return seat.isTeam(this.bidding.declarer) ? this.score : this.score * -1;
   }
 
   get player() {
@@ -299,6 +309,38 @@ export class Hand {
     return this.bidding.bids.length + this.play.length;
   }
 
+  previousTurn(pos: number) {
+    if (pos < 0 || pos >= this.positions) {
+      return -1;
+    }
+    const seat = this.atPosition(pos).turn;
+    if (!seat) return -1;
+
+    while (pos > 0) {
+      pos -= 1;
+      if (this.atPosition(pos).turn === seat) {
+        return pos;
+      }
+    }
+    return -1;
+  }
+
+  nextTurn(pos: number) {
+    if (pos < 0 || pos >= this.positions) {
+      return -1;
+    }
+    const seat = this.atPosition(pos).turn;
+    if (!seat) return -1;
+
+    while (pos < this.positions) {
+      pos += 1;
+      if (this.atPosition(pos).turn === seat) {
+        return pos;
+      }
+    }
+    return -1;
+  }
+
   atPosition(pos: number) {
     if (pos < 0) {
       return this;
@@ -318,7 +360,7 @@ export class Hand {
       this.deal,
       bids,
       play,
-      this.claim,
+      pos == this.positions ? this.claim : -1,
       this.players
     );
   }
