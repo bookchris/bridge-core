@@ -5,6 +5,8 @@ export class Seat {
   static East = new Seat("East");
 
   static fromString(input: string) {
+    if (!input) return this.South;
+
     const suit = Seats.find((s) => s.seat === input || s.seat === input[0]);
     if (!suit) {
       throw new Error("Can't make a seat from string: " + input);

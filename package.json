@@ -1,6 +1,6 @@
 {
   "name": "@chrisbook/bridge-core",
-  "version": "1.0.7",
+  "version": "1.0.9",
   "description": "A library for duplicate bridge state",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

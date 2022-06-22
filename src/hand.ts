@@ -63,6 +63,21 @@ export class Hand {
     return linToHand(url);
   }
 
+  static fromDeal(): Hand {
+    const cards = Array.from({ length: 52 }, (_, i) => i);
+    const deal = [] as number[];
+    for (let i = 0; i < 52; i++) {
+      const index = Math.floor(Math.random() * cards.length);
+      const card = cards[index];
+      cards.splice(index, 1);
+      deal.push(card);
+    }
+
+    return this.fromJson({
+      deal: deal,
+    });
+  }
+
   toJson(): HandJson {
     return {
       board: this.board,
@@ -422,6 +437,42 @@ export class Hand {
       this.deal,
       [...this.bids, bid],
       this.play,
+      this.claim,
+      this.players
+    );
+  }
+
+  canPlay(card: Card, seat: Seat) {
+    if (!this.isPlaying) return false;
+    if (this.player != seat) return false;
+
+    const holding = this.getHolding(seat);
+    if (!holding.find((c) => c.id === card.id)) return false;
+
+    const lastTrick = this.tricks.at(-1);
+    if (lastTrick && !lastTrick.complete) {
+      const lead = lastTrick.cards[0];
+      if (
+        card.suit !== lead.suit &&
+        holding.filter((c) => c.suit === lead.suit).length
+      )
+        return false;
+    }
+    return true;
+  }
+
+  doPlay(card: Card, seat: Seat) {
+    if (!this.canPlay(card, seat)) {
+      return undefined;
+    }
+    return new Hand(
+      this.id,
+      this.board,
+      this.dealer,
+      this.vulnerability,
+      this.deal,
+      this.bids,
+      [...this.play, card],
       this.claim,
       this.players
     );
