@@ -1,6 +1,6 @@
 import { Bid } from "./bid";
-import { Bidding } from "./bidding";
 import { Card } from "./card";
+import { Contract } from "./contract";
 import { linToHand } from "./lin";
 import { Player } from "./player";
 import { Seat } from "./seat";
@@ -20,21 +20,17 @@ export type HandJson = {
 };
 
 export class Hand {
-  readonly bidding: Bidding;
-
   constructor(
     readonly id: string | undefined,
     readonly board: number,
     readonly dealer: Seat,
     readonly vulnerability: Vulnerability,
     readonly deal: Card[],
-    readonly bids: Bid[],
+    readonly bidding: Bid[],
     readonly play: Card[],
     readonly claim: number,
     readonly players: Player[]
-  ) {
-    this.bidding = new Bidding(bids, this.dealer);
-  }
+  ) {}
 
   static fromJson(data: HandJson, id?: string): Hand {
     const dataPlayers = data.players?.map((p) => new Player(p)) || [];
@@ -84,7 +80,7 @@ export class Hand {
       dealer: this.dealer.toJson(),
       vulnerability: this.vulnerability.toJson(),
       deal: this.deal.map((c) => c.toJson()),
-      bidding: this.bids.map((b) => b.toJson()),
+      bidding: this.bidding.map((b) => b.toJson()),
       play: this.play.map((c) => c.toJson()),
       players: this.players.map((p) => p.toJson()),
       claim: this.claim,
@@ -120,14 +116,14 @@ export class Hand {
   }
 
   get nextBidder() {
-    return this.dealer.next(this.bidding.bids.length);
+    return this.dealer.next(this.contract.bids.length);
   }
 
   get state() {
-    if (this.bidding.passed) {
+    if (this.contract.passed) {
       return HandState.Complete;
     }
-    if (!this.bidding.complete) {
+    if (!this.contract.complete) {
       return HandState.Bidding;
     }
     if (this.claim !== -1) return HandState.Complete;
@@ -144,7 +140,7 @@ export class Hand {
   }
 
   get openingLeader() {
-    return this.bidding.declarer ? this.bidding.declarer.next() : undefined;
+    return this.contract.declarer ? this.contract.declarer.next() : undefined;
   }
 
   get northSouthTricks() {
@@ -160,7 +156,7 @@ export class Hand {
   }
 
   get result() {
-    if (this.state !== HandState.Complete || !this.bidding.level) {
+    if (this.state !== HandState.Complete || !this.contract.level) {
       return 0;
     }
     let tricks = 0;
@@ -168,22 +164,22 @@ export class Hand {
       tricks = this.claim;
     } else {
       tricks =
-        this.bidding.declarer == Seat.North ||
-        this.bidding.declarer == Seat.South
+        this.contract.declarer == Seat.North ||
+        this.contract.declarer == Seat.South
           ? this.northSouthTricks
           : this.eastWestTricks;
     }
-    return tricks - (6 + this.bidding.level);
+    return tricks - (6 + this.contract.level);
   }
 
   get score() {
-    if (this.state !== HandState.Complete || this.bidding.passed) {
+    if (this.state !== HandState.Complete || this.contract.passed) {
       return 0;
     }
     const result = this.result;
-    const vulnerable = this.vulnerability.isVulnerable(this.bidding.declarer!);
+    const vulnerable = this.vulnerability.isVulnerable(this.contract.declarer!);
     if (result < 0) {
-      if (this.bidding.doubled || this.bidding.redoubled) {
+      if (this.contract.doubled || this.contract.redoubled) {
         let score: number;
         if (vulnerable) {
           score = [
@@ -196,7 +192,7 @@ export class Hand {
             -2900, -3200, -3500,
           ][-result];
         }
-        if (this.bidding.redoubled) {
+        if (this.contract.redoubled) {
           score *= 2;
         }
         return score;
@@ -207,45 +203,45 @@ export class Hand {
       }
     }
     let score = 0;
-    switch (this.bidding.suit) {
+    switch (this.contract.suit) {
       case Suit.Spade:
       case Suit.Heart:
-        score = this.bidding.level! * 30;
+        score = this.contract.level! * 30;
         break;
       case Suit.Diamond:
       case Suit.Club:
-        score = this.bidding.level! * 20;
+        score = this.contract.level! * 20;
         break;
       case Suit.NoTrump:
-        score = this.bidding.level! * 30 + 10;
+        score = this.contract.level! * 30 + 10;
     }
-    if (this.bidding.doubled) {
+    if (this.contract.doubled) {
       score *= 2;
-    } else if (this.bidding.redoubled) {
+    } else if (this.contract.redoubled) {
       score *= 4;
     }
     if (score < 100) {
       score += 50;
     } else {
       score += vulnerable ? 500 : 300;
-      if (this.bidding.level === 7) {
+      if (this.contract.level === 7) {
         score += vulnerable ? 1500 : 1000;
-      } else if (this.bidding.level === 6) {
+      } else if (this.contract.level === 6) {
         score += vulnerable ? 750 : 500;
       }
     }
-    if (this.bidding.doubled) {
+    if (this.contract.doubled) {
       score += 50;
-    } else if (this.bidding.redoubled) {
+    } else if (this.contract.redoubled) {
       score += 100;
     }
     if (result > 0) {
-      if (this.bidding.doubled) {
+      if (this.contract.doubled) {
         score += result * (vulnerable ? 200 : 100);
-      } else if (this.bidding.redoubled) {
+      } else if (this.contract.redoubled) {
         score += result * (vulnerable ? 400 : 200);
       } else {
-        switch (this.bidding.suit) {
+        switch (this.contract.suit) {
           case Suit.NoTrump:
           case Suit.Spade:
           case Suit.Heart:
@@ -262,8 +258,8 @@ export class Hand {
   }
 
   scoreAs(seat: Seat) {
-    if (!this.bidding.declarer) return 0;
-    return seat.isTeam(this.bidding.declarer) ? this.score : this.score * -1;
+    if (!this.contract.declarer) return 0;
+    return seat.isTeam(this.contract.declarer) ? this.score : this.score * -1;
   }
 
   get player() {
@@ -283,8 +279,12 @@ export class Hand {
     }
   }
 
+  get contract() {
+    return new Contract(this.bidding, this.dealer);
+  }
+
   get tricks() {
-    const trump = this.bidding.suit;
+    const trump = this.contract.suit;
     if (!trump) {
       return [];
     }
@@ -313,7 +313,7 @@ export class Hand {
       this.dealer,
       this.vulnerability,
       this.deal,
-      this.bids,
+      this.bidding,
       this.play,
       this.claim,
       players
@@ -321,7 +321,7 @@ export class Hand {
   }
 
   get positions() {
-    return this.bidding.bids.length + this.play.length;
+    return this.contract.bids.length + this.play.length;
   }
 
   previousTurn(pos: number) {
@@ -360,11 +360,11 @@ export class Hand {
     if (pos < 0) {
       return this;
     }
-    if (pos >= this.play.length + this.bids.length) {
+    if (pos >= this.play.length + this.bidding.length) {
       return this;
     }
 
-    const bids = this.bids.slice(0, pos);
+    const bids = this.bidding.slice(0, pos);
     const play = bids.length < pos ? this.play.slice(0, pos - bids.length) : [];
 
     return new Hand(
@@ -384,8 +384,8 @@ export class Hand {
     if (this.play.length) {
       return this.play[this.play.length - 1];
     }
-    if (this.bids.length) {
-      return this.bids[this.bids.length - 1];
+    if (this.bidding.length) {
+      return this.bidding[this.bidding.length - 1];
     }
     throw new Error("No past actions");
   }
@@ -394,7 +394,7 @@ export class Hand {
     if (this.deal.length != hand.deal.length) {
       return false;
     }
-    if (this.bids.length != hand.bids.length) {
+    if (this.bidding.length != hand.bidding.length) {
       return false;
     }
     if (this.play.length != hand.play.length) {
@@ -405,8 +405,8 @@ export class Hand {
         return false;
       }
     }
-    for (let i in this.bids) {
-      if (this.bids[i].bid !== hand.bids[i].bid) {
+    for (let i in this.bidding) {
+      if (this.bidding[i].bid !== hand.bidding[i].bid) {
         return false;
       }
     }
@@ -421,8 +421,7 @@ export class Hand {
   canBid(bid: Bid, seat: Seat) {
     if (!this.isBidding) return false;
     if (this.nextBidder != seat) return false;
-    if (!this.bidding.validateNext(bid)) return false;
-    return true;
+    return this.contract.canBid(bid);
   }
 
   doBid(bid: Bid, seat: Seat) {
@@ -435,7 +434,7 @@ export class Hand {
       this.dealer,
       this.vulnerability,
       this.deal,
-      [...this.bids, bid],
+      [...this.bidding, bid],
       this.play,
       this.claim,
       this.players
@@ -446,6 +445,7 @@ export class Hand {
     if (!this.isPlaying) return false;
     if (this.player != seat) return false;
 
+    // TODO: fix who plays the dummy when delcaring.
     const holding = this.getHolding(seat);
     if (!holding.find((c) => c.id === card.id)) return false;
 
@@ -471,7 +471,7 @@ export class Hand {
       this.dealer,
       this.vulnerability,
       this.deal,
-      this.bids,
+      this.bidding,
       [...this.play, card],
       this.claim,
       this.players
