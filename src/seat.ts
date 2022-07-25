@@ -43,6 +43,10 @@ export class Seat {
     return Seats.indexOf(this);
   }
 
+  teamIndex(): number {
+    return Seats.indexOf(this) % 2;
+  }
+
   next(num: number = 1): Seat {
     return Seats[(this.index() + num) % 4];
   }
