@@ -5,10 +5,14 @@ export class Suit {
   public static Spade = new Suit("♠", "S");
   public static NoTrump = new Suit("NT");
 
-  private constructor(private suit: String, private alt?: String) {}
+  private constructor(private suit: string, private alt?: string) {}
 
   toString() {
     return this.suit;
+  }
+
+  toLin() {
+    return this.alt || this.suit;
   }
 
   public static fromString(input: string) {

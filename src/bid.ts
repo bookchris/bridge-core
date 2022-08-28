@@ -24,6 +24,7 @@ export class Bid {
       this.suit = Suit.fromString(bid.substring(1));
       this.index = SuitBids.indexOf(bid);
       this.level = parseInt(bid[0]);
+      this.bid = `${this.level}${this.suit}`;
     }
   }
 
@@ -33,5 +34,12 @@ export class Bid {
 
   toJson() {
     return this.toString();
+  }
+
+  toLin() {
+    if (this.bid != "Pass" && this.bid != "X" && this.bid != "XX") {
+      return `${this.level}${this.suit?.toLin()}`;
+    }
+    return this.bid;
   }
 }
