@@ -21,10 +21,10 @@ export class Bid {
   constructor(bid: string) {
     this.bid = bid;
     if (bid != "Pass" && bid != "X" && bid != "XX") {
-      this.suit = Suit.fromString(bid.substring(1));
-      this.index = SuitBids.indexOf(bid);
       this.level = parseInt(bid[0]);
+      this.suit = Suit.fromString(bid.substring(1));
       this.bid = `${this.level}${this.suit}`;
+      this.index = SuitBids.indexOf(this.bid);
     }
   }
 
