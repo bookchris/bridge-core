@@ -83,10 +83,16 @@ export class Contract {
     if (bid.bid === "Pass") return true;
     if (bid.bid === "X") return this.canDouble;
     if (bid.bid === "XX") return this.canRedouble;
-    if (!this.index || !this.suit || !bid.index || !bid.suit) return true;
+    if (
+      this.index === undefined ||
+      !this.suit ||
+      bid.index === undefined ||
+      !bid.suit
+    )
+      return true;
     return (
       this.index < bid.index ||
-      (this.index === bid.index && this.suit < bid.suit)
+      (this.index === bid.index && this.suit.index() < bid.suit.index())
     );
   }
 }
