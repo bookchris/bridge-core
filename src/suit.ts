@@ -15,6 +15,10 @@ export class Suit {
     return this.alt || this.suit;
   }
 
+  index() {
+    Suits.indexOf(this);
+  }
+
   public static fromString(input: string) {
     const suit = Suits.find((s) => s.suit === input || s.alt === input);
     if (!suit) {
