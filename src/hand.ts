@@ -156,7 +156,7 @@ export class Hand {
   }
 
   get result() {
-    if (this.state !== HandState.Complete || !this.contract.level) {
+    if (this.state !== HandState.Complete || !this.contract.suitBid?.level) {
       return 0;
     }
     let tricks = 0;
@@ -169,7 +169,7 @@ export class Hand {
           ? this.northSouthTricks
           : this.eastWestTricks;
     }
-    return tricks - (6 + this.contract.level);
+    return tricks - (6 + this.contract.suitBid.level);
   }
 
   get score() {
@@ -203,17 +203,17 @@ export class Hand {
       }
     }
     let score = 0;
-    switch (this.contract.suit) {
+    switch (this.contract.suitBid?.suit) {
       case Suit.Spade:
       case Suit.Heart:
-        score = this.contract.level! * 30;
+        score = this.contract.suitBid.level! * 30;
         break;
       case Suit.Diamond:
       case Suit.Club:
-        score = this.contract.level! * 20;
+        score = this.contract.suitBid.level! * 20;
         break;
       case Suit.NoTrump:
-        score = this.contract.level! * 30 + 10;
+        score = this.contract.suitBid.level! * 30 + 10;
     }
     if (this.contract.doubled) {
       score *= 2;
@@ -224,9 +224,9 @@ export class Hand {
       score += 50;
     } else {
       score += vulnerable ? 500 : 300;
-      if (this.contract.level === 7) {
+      if (this.contract.suitBid?.level === 7) {
         score += vulnerable ? 1500 : 1000;
-      } else if (this.contract.level === 6) {
+      } else if (this.contract.suitBid?.level === 6) {
         score += vulnerable ? 750 : 500;
       }
     }
@@ -241,7 +241,7 @@ export class Hand {
       } else if (this.contract.redoubled) {
         score += result * (vulnerable ? 400 : 200);
       } else {
-        switch (this.contract.suit) {
+        switch (this.contract.suitBid?.suit) {
           case Suit.NoTrump:
           case Suit.Spade:
           case Suit.Heart:
@@ -284,7 +284,7 @@ export class Hand {
   }
 
   get tricks() {
-    const trump = this.contract.suit;
+    const trump = this.contract.suitBid?.suit;
     if (!trump) {
       return [];
     }

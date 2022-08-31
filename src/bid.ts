@@ -20,11 +20,18 @@ export class Bid {
 
   constructor(bid: string) {
     this.bid = bid;
-    if (bid != "Pass" && bid != "X" && bid != "XX") {
+    if (bid[0] === "P") {
+      this.bid = "Pass";
+    } else if (bid === "X" || bid === "XX") {
+      this.bid = bid;
+    } else {
       this.level = parseInt(bid[0]);
       this.suit = Suit.fromString(bid.substring(1));
       this.bid = `${this.level}${this.suit}`;
       this.index = SuitBids.indexOf(this.bid);
+      if (this.index === -1) {
+        throw new Error(`${bid} is not a valid bid`);
+      }
     }
   }
 
@@ -36,9 +43,12 @@ export class Bid {
     return this.toString();
   }
 
-  toLin() {
-    if (this.bid != "Pass" && this.bid != "X" && this.bid != "XX") {
+  toBen() {
+    if (this.index !== undefined) {
       return `${this.level}${this.suit?.toLin()}`;
+    }
+    if (this.bid === "Pass") {
+      return "PASS";
     }
     return this.bid;
   }

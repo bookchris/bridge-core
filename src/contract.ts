@@ -1,11 +1,14 @@
-import { Bid, SuitBids } from "./bid";
+import { Bid } from "./bid";
 import { Seat } from "./seat";
 import { Suit } from "./suit";
 
 export class Contract {
+  suitBid?: Bid;
+  /*
   suit?: Suit;
   level?: number;
   index?: number;
+  */
   declarer?: Seat;
   doubled?: boolean;
   redoubled?: boolean;
@@ -18,9 +21,12 @@ export class Contract {
     bids.forEach((bid, i) => {
       const bidder = this.dealer.next(i);
       if (bid.suit && bid.index && bid.level) {
+        /*
         this.suit = bid.suit;
         this.index = bid.index;
         this.level = bid.level;
+        */
+        this.suitBid = bid;
         this.doubled = false;
         this.redoubled = false;
 
@@ -44,9 +50,9 @@ export class Contract {
 
   toString() {
     if (!this.complete) return "";
-    if (this.index === undefined) return "Passed out";
+    if (this.suitBid === undefined) return "Passed out";
 
-    const result = `${SuitBids[this.index]} ${this.declarer}`;
+    const result = `${this.suitBid.toString()} ${this.declarer}`;
     if (this.doubled) {
       return result + " Doubled";
     }
@@ -83,16 +89,9 @@ export class Contract {
     if (bid.bid === "Pass") return true;
     if (bid.bid === "X") return this.canDouble;
     if (bid.bid === "XX") return this.canRedouble;
-    if (
-      this.index === undefined ||
-      !this.suit ||
-      bid.index === undefined ||
-      !bid.suit
-    )
+    if (this.suitBid?.index === undefined || bid.index === undefined) {
       return true;
-    return (
-      this.index < bid.index ||
-      (this.index === bid.index && this.suit.index() < bid.suit.index())
-    );
+    }
+    return this.suitBid?.index < bid.index;
   }
 }
