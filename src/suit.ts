@@ -3,7 +3,7 @@ export class Suit {
   public static Diamond = new Suit("♦", "D");
   public static Heart = new Suit("♥", "H");
   public static Spade = new Suit("♠", "S");
-  public static NoTrump = new Suit("NT");
+  public static NoTrump = new Suit("NT", "N");
 
   private constructor(private suit: string, private alt?: string) {}
 
