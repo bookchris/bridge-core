@@ -1,4 +1,4 @@
-import { Suit } from "./suit";
+import { Suit, Suits } from "./suit";
 
 export class Card {
   readonly id: number;
@@ -9,6 +9,15 @@ export class Card {
     this.id = id;
     this.suit = Object.values(Suit)[Math.floor(id / 13)];
     this.rank = id % 13;
+  }
+
+  static fromLin(value: string): Card {
+    const suit = Suit.fromLin(value[0]);
+    const rank = linCardToRank(value[1]);
+    if (rank === -1) {
+      throw new Error("Unable to parse card: " + value);
+    }
+    return new Card(rank + 13 * Suits.indexOf(suit));
   }
 
   get rankStr() {
@@ -39,4 +48,24 @@ export class Card {
   static comparator(a: Card, b: Card): number {
     return a.id - b.id;
   }
+}
+
+function linCardToRank(c: string) {
+  switch (c) {
+    case "A":
+      return 12;
+    case "K":
+      return 11;
+    case "Q":
+      return 10;
+    case "J":
+      return 9;
+    case "T":
+      return 8;
+  }
+  const number = parseInt(c);
+  if (number > 0) {
+    return number - 2;
+  }
+  return -1;
 }
